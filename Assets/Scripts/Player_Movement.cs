@@ -101,6 +101,8 @@ public class Player_Movement : MonoBehaviour
             CanSlamJump = true;
             StartSlamJump = true;
         }
+
+        FlipPlayer();
     }
 
     void FixedUpdate()
@@ -144,6 +146,15 @@ public class Player_Movement : MonoBehaviour
     {
         return Physics2D.OverlapCircle(GroundCheck.position, 0.7f, groundLayer);
     }
+
+    void FlipPlayer()
+    {
+        if(movement.x != 0 )
+        {
+            transform.localScale = new Vector2(1.7f * movement.x, transform.localScale.y);
+        }
+    }
+//this game is GoAtEd baby
 
     private bool IsOnWall()
     {

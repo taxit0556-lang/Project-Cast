@@ -21,6 +21,7 @@ public class Gun_Shooting : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        direction = new Vector2(GameObject.Find("Player").transform.localScale.x, 0);
         if (Input.GetMouseButtonDown(0))
         {
             GunShooting();
@@ -29,6 +30,7 @@ public class Gun_Shooting : MonoBehaviour
 
     public void GunShooting()
     {
+        //BASE SHOOTING
         CurrentBullet = Bullets[0];
 
         GameObject BulletIns = Instantiate(CurrentBullet, ShootPoint.position, ShootPoint.rotation);
@@ -36,6 +38,12 @@ public class Gun_Shooting : MonoBehaviour
 
         Bullets.Insert(5,  Bullets[0]);
         Bullets.Remove(Bullets[0]);
+
+
+        //KNOCKBACK
+        Rigidbody2D Player_rb = GameObject.Find("Player").GetComponent<Rigidbody2D>();
+
+        Player_rb.AddForce(-BulletIns.transform.right * BulletIns.GetComponent<Gun_Bullet>().Bullet_KnockBack);
     }
 
 }

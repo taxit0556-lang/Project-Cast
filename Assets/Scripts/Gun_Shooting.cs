@@ -32,7 +32,7 @@ public class Gun_Shooting : MonoBehaviour
         CurrentBullet = Bullets[0];
 
         GameObject BulletIns = Instantiate(CurrentBullet, ShootPoint.position, ShootPoint.rotation);
-        BulletIns.GetComponent<Rigidbody2D>().AddForce(BulletIns.transform.right * BulletIns.GetComponent<Gun_Bullet>().BulletSpeed);
+        BulletIns.GetComponent<Rigidbody2D>().AddForce(BulletIns.transform.right * BulletIns.GetComponent<Gun_Bullet>().Bullet_Speed);
 
         Bullets.Insert(5,  Bullets[0]);
         Bullets.Remove(Bullets[0]);

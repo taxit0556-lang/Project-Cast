@@ -16,6 +16,8 @@ public class Gun_Base : MonoBehaviour
 
     private void RotateTowardsMousePosition()
     {
+        //ROTATION
+
         Vector3 mouseScreenPosition = Input.mousePosition;
 
         mouseScreenPosition.z = mainCamera.transform.position.z; 

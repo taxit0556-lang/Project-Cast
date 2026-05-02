@@ -13,4 +13,12 @@ public class Gun_Bullet : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    void OnColliderEnter2D(Collision2D other)
+    {
+        if (other.gameObject.CompareTag("Enemy"))
+        {
+            Destroy(gameObject);
+        }
+    }
 }

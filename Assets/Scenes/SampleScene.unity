@@ -722,7 +722,7 @@ MonoBehaviour:
   wallCheckDistance: 0.6
   wallLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
   jumpBufferTime: 0.15
   groundLayer:
     serializedVersion: 2

@@ -3,36 +3,36 @@ using UnityEngine;
 public class Player_Movement : MonoBehaviour
 {
     [Header("Movement")]
-    public float MoveSpeed;
-    public float jumpingPower;
-    public float CyoteTime;
-    public float SlamJumpWindow;
+    public float MoveSpeed = 6f;
+    public float jumpingPower = 12f;
+    public float CyoteTime = 0.15f;
 
-    private float SlamJumpTime;
-    private bool groundJump;
-    private bool CanSlamJump;
-    private bool StartSlamJump;
+    [Header("Wall Jump")]
+    public float wallJumpForceX = 10f;
+    public float wallJumpForceY = 12f;
+    public float wallCheckDistance = 0.6f;
+    public LayerMask wallLayer;
+    public float wallDetachTime = 0.15f;
+
+    [Header("Jump Buffer")]
+    public float jumpBufferTime = 0.15f;
+
+    [Header("Ground Check")]
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private Transform GroundCheck;
 
     Rigidbody2D rb;
     Vector2 movement;
 
-    [Header("Wall Jump Settings")]
-    public float wallJumpForceX = 8f;
-    public float wallJumpForceY = 12f;
-    public float wallCheckDistance = 0.6f;
-    public LayerMask wallLayer;
+    float jumpBufferCounter;
+    float LastTimeGrounded;
 
-    private bool RightOnWall;
-    private bool LeftOnWall;
+    bool RightOnWall;
+    bool LeftOnWall;
 
-    [Header("Jump Buffer")]
-    public float jumpBufferTime = 0.15f;
-    private float jumpBufferCounter;
+    float wallDetachTimer;
 
-    [Header("GroundCheck")]
-    [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private Transform GroundCheck;
-    private float LastTimeGrounded;
+    bool isWallSticking;
 
     void Start()
     {
@@ -43,102 +43,84 @@ public class Player_Movement : MonoBehaviour
     {
         movement.x = Input.GetAxisRaw("Horizontal");
 
-        // -----------------------
-        // Jump Buffer Input
-        // -----------------------
+        // JUMP BUFFER
+    
         if (Input.GetKeyDown(KeyCode.Space))
-        {
             jumpBufferCounter = jumpBufferTime;
-        }
         else
-        {
             jumpBufferCounter -= Time.deltaTime;
-        }
 
-        // -----------------------
-        // Wall Jump (PRIORITY)
-        // -----------------------
-        if (jumpBufferCounter > 0f && IsOnWall() && !IsGrounded())
+        // WALL JUMP
+        if (jumpBufferCounter > 0f && isWallSticking)
         {
-            float direction = RightOnWall ? -1 : 1;
+            float inputDir = movement.x;
+            float direction = (inputDir != 0) ? Mathf.Sign(inputDir) : (RightOnWall ? -1 : 1);
+
+            rb.gravityScale = 1f;
             rb.linearVelocity = new Vector2(direction * wallJumpForceX, wallJumpForceY);
 
+            isWallSticking = false;
+            wallDetachTimer = wallDetachTime;
             jumpBufferCounter = 0f;
         }
-        // -----------------------
-        // Normal + Coyote Jump
-        // -----------------------
+        // NORMAL JUMP
         else if (jumpBufferCounter > 0f && (IsGrounded() || LastTimeGrounded < CyoteTime))
         {
-            if (CanSlamJump)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower * 1.4f);
-                CanSlamJump = false;
-            }
-            else
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower);
-            }
-
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower);
             jumpBufferCounter = 0f;
-            groundJump = true;
         }
 
-        // -----------------------
-        // Jump Cut (variable height)
-        // -----------------------
+        // Jump cut
         if (Input.GetKeyUp(KeyCode.Space) && rb.linearVelocity.y > 0f)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
         }
-
-        // -----------------------
-        // Down Slam
-        // -----------------------
-        if (Input.GetKey(KeyCode.S) && !IsGrounded())
-        {
-            rb.AddForce(Vector2.down * 60f, ForceMode2D.Force);
-            CanSlamJump = true;
-            StartSlamJump = true;
-        }
-
-        FlipPlayer();
     }
 
     void FixedUpdate()
     {
+        // Ground check
         if (!IsGrounded())
-        {
             LastTimeGrounded += Time.deltaTime;
-            SlamJumpTime = 0;
+        else
+            LastTimeGrounded = 0;
 
-            // -----------------------
-            // Wall Slide
-            // -----------------------
-            if (IsOnWall() && rb.linearVelocity.y < 0)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, -2f);
-            }
+        wallDetachTimer -= Time.deltaTime;
+
+        bool onWall = IsOnWall();
+        bool pushingIntoWall =
+            (RightOnWall && movement.x > 0) ||
+            (LeftOnWall && movement.x < 0);
+
+        
+        // WALL STICK STATE
+       
+        if (!IsGrounded() && onWall && pushingIntoWall && wallDetachTimer <= 0f)
+        {
+            isWallSticking = true;
         }
         else
         {
-            LastTimeGrounded = 0;
-            groundJump = false;
-
-            // Reset slam state
-            StartSlamJump = false;
-
-            if (StartSlamJump)
-            {
-                SlamJumpTime += Time.deltaTime;
-            }
-
-            if (SlamJumpTime > SlamJumpWindow)
-            {
-                CanSlamJump = false;
-            }
+            isWallSticking = false;
         }
 
+        if (isWallSticking)
+        {
+           
+            rb.gravityScale = 0f;
+            rb.linearVelocity = Vector2.zero;
+
+          
+            rb.position = new Vector2(rb.position.x, rb.position.y);
+
+            return; 
+        }
+        else
+        {
+            rb.gravityScale = 1f;
+        }
+
+        // Movement
         rb.linearVelocity = new Vector2(movement.x * MoveSpeed, rb.linearVelocity.y);
     }
 
@@ -147,20 +129,10 @@ public class Player_Movement : MonoBehaviour
         return Physics2D.OverlapCircle(GroundCheck.position, 0.7f, groundLayer);
     }
 
-    void FlipPlayer()
-    {
-        if(movement.x != 0 )
-        {
-            transform.localScale = new Vector2(1.7f * movement.x, transform.localScale.y);
-        }
-    }
-//this game is GoAtEd baby
-
     private bool IsOnWall()
     {
         RightOnWall = Physics2D.Raycast(transform.position, Vector2.right, wallCheckDistance, wallLayer);
         LeftOnWall = Physics2D.Raycast(transform.position, Vector2.left, wallCheckDistance, wallLayer);
-
         return RightOnWall || LeftOnWall;
     }
 }

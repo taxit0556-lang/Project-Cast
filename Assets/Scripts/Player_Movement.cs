@@ -12,8 +12,13 @@ public class Player_Movement : MonoBehaviour
     private bool groundJump;
     private bool CanSlamJump;
     private bool StartSlamJump;
+
     Rigidbody2D rb;
     Vector2 movement;
+
+    [Header("Jump Buffer")]
+    public float jumpBufferTime = 0.15f;
+    private float jumpBufferCounter;
 
     [Header("WallJump")]
     private bool RightOnWall;
@@ -23,11 +28,9 @@ public class Player_Movement : MonoBehaviour
     private float RayLength = 1f;
 
     [Header("GroundCheck")]
-    [SerializeField]private LayerMask groundLayer;
-    [SerializeField]private Transform GroundCheck;
+    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private Transform GroundCheck;
     private float LastTimeGrounded;
-
-    
 
     void Start()
     {
@@ -38,52 +41,45 @@ public class Player_Movement : MonoBehaviour
     {
         movement.x = Input.GetAxisRaw("Horizontal");
 
-        //normal Jump
-        if(Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        // Jump Buffer Input
+      
+        if (Input.GetKeyDown(KeyCode.Space))
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower);
-            groundJump = true;
+            jumpBufferCounter = jumpBufferTime;
         }
-        if(Input.GetKeyUp(KeyCode.Space) && rb.linearVelocity.y > 0f)
+        else
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
-            groundJump = true;
+            jumpBufferCounter -= Time.deltaTime;
         }
 
-        //SlamJump
-        if(Input.GetKeyDown(KeyCode.Space) && IsGrounded() && CanSlamJump == true)
+        if (jumpBufferCounter > 0f && (IsGrounded() || LastTimeGrounded < CyoteTime))
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower * 1.4f);
-            groundJump = true;
-            CanSlamJump = false;
-        }
-        if(Input.GetKeyUp(KeyCode.Space) && rb.linearVelocity.y > 0f)
-        {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
-            groundJump = true;
-            CanSlamJump = false;
-        }
-        
-
-        //Cyo Time
-        if(LastTimeGrounded < CyoteTime && !IsGrounded() && groundJump != true)
-        {
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (CanSlamJump)
+            {
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower * 1.4f);
+                CanSlamJump = false;
+            }
+            else
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpingPower);
             }
 
-            if(Input.GetKeyUp(KeyCode.Space) && rb.linearVelocity.y > 0f)
-            {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
-            }
+            jumpBufferCounter = 0f;
+            groundJump = true;
         }
 
-
-        //DownForce
-        if(Input.GetKey(KeyCode.S) && !IsGrounded())
+        
+        if (Input.GetKeyUp(KeyCode.Space) && rb.linearVelocity.y > 0f)
         {
-            rb.AddForce(Vector2.down * 60f,ForceMode2D.Force);
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
+        }
+
+      
+        // Down Slam
+        
+        if (Input.GetKey(KeyCode.S) && !IsGrounded())
+        {
+            rb.AddForce(Vector2.down * 60f, ForceMode2D.Force);
             CanSlamJump = true;
             StartSlamJump = true;
         }
@@ -93,22 +89,21 @@ public class Player_Movement : MonoBehaviour
     {
         if (!IsGrounded())
         {
-            LastTimeGrounded += 1 * Time.deltaTime;
-
+            LastTimeGrounded += Time.deltaTime;
             SlamJumpTime = 0;
         }
         else
         {
             LastTimeGrounded = 0;
-
             groundJump = false;
-            
-            //Slamtimer
-            if(StartSlamJump = true)
+
+
+            if (StartSlamJump)
             {
-                SlamJumpTime += 1 * Time.deltaTime;
+                SlamJumpTime += Time.deltaTime;
             }
-            if(SlamJumpTime > SlamJumpWindow)
+
+            if (SlamJumpTime > SlamJumpWindow)
             {
                 CanSlamJump = false;
             }
@@ -117,9 +112,8 @@ public class Player_Movement : MonoBehaviour
         rb.linearVelocity = new Vector2(movement.x * MoveSpeed, rb.linearVelocity.y);
     }
 
-
     private bool IsGrounded()
     {
         return Physics2D.OverlapCircle(GroundCheck.position, 0.7f, groundLayer);
     }
-}
+}//this game is GoAtEd baby
